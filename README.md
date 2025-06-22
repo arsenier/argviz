@@ -1,3 +1,5 @@
+[![Version](https://img.shields.io/badge/version-v0.0.1-informational)](https://github.com/arsenier/argviz/actions/workflows/auto-semver.yml)
+
 # ArGVIZ
 
 ОСРВ для Arduino с визуализацией графики на терминале.

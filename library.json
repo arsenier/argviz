@@ -1,15 +1,13 @@
 {
   "name": "argviz",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Arduino Guidance Vizualisation: Arduino telemetry management library for ArGOS via Serial and I2C display",
   "keywords": "telemetry, serial, i2c, display",
-  "repository":
-  {
+  "repository": {
     "type": "git",
     "url": "https://github.com/arsenier/argviz.git"
   },
-  "authors":
-  [
+  "authors": [
     {
       "name": "Arsenii Iarmolinskii",
       "email": "yarmolinskiyam@gmail.com",
@@ -18,7 +16,7 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "kcl93/VT100" : "1.0"
+    "kcl93/VT100": "1.0"
   },
   "frameworks": "arduino",
   "platforms": "*",
