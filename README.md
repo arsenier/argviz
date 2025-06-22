@@ -1,4 +1,4 @@
-[![Version](https://img.shields.io/badge/version-v0.0.1-informational)](https://github.com/arsenier/argviz/actions/workflows/auto-semver.yml)
+[![Version](https://img.shields.io/badge/version-v0.0.2-informational)](https://github.com/arsenier/argviz/actions/workflows/auto-semver.yml)
 
 # ArGVIZ
 
