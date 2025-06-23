@@ -1,6 +1,6 @@
 {
   "name": "argviz",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Arduino Guidance Vizualisation: Arduino telemetry management library for ArGOS via Serial and I2C display",
   "keywords": "telemetry, serial, i2c, display",
   "repository": {

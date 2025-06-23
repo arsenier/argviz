@@ -14,6 +14,7 @@
 
 size_t selectedScreen = 0;
 int selectY = 0;
+Stream *serial_bus;
 
 enum CLICK_STATE
 {
@@ -36,14 +37,14 @@ CLICK_STATE clickState = CLICK_NONE;
         int len = sprintf(buf, __VA_ARGS__); \
         if(len == -1 || len > DISPLAY_WIDTH) \
         { \
-            Serial.print("      sprintf error      "); \
+            serial_bus->print("      sprintf error      "); \
         } \
         else \
         { \
-            Serial.print(buf); \
+            serial_bus->print(buf); \
             for(int k = len; k < DISPLAY_WIDTH; k++) \
             { \
-                Serial.print(' '); \
+                serial_bus->print(' '); \
             } \
         } \
         argviz_row++; \
@@ -66,14 +67,14 @@ CLICK_STATE clickState = CLICK_NONE;
         int len = sprintf(buf, __VA_ARGS__); \
         if(len == -1 || len > DISPLAY_WIDTH) \
         { \
-            Serial.print("      sprintf error      "); \
+            serial_bus->print("      sprintf error      "); \
         } \
         else \
         { \
-            Serial.print(buf); \
+            serial_bus->print(buf); \
             for(int k = len; k < DISPLAY_WIDTH; k++) \
             { \
-                Serial.print(' '); \
+                serial_bus->print(' '); \
             } \
         } \
         argviz_row++; \
@@ -82,9 +83,9 @@ CLICK_STATE clickState = CLICK_NONE;
 #define SCREEN(idx, ...) \
 size_t screen##idx() \
 { \
-    size_t argviz_row = 1; \
+    int argviz_row = 1; \
     __VA_ARGS__ \
-    size_t argviz_row_buf = argviz_row; \
+    int argviz_row_buf = argviz_row; \
     for(; argviz_row <= SCREEN_MAX_HEIGHT;) \
         ROW("                         "); \
     return argviz_row_buf; \
@@ -95,7 +96,7 @@ size_t screenBlank()
     for(size_t i = 1; i <= 6; i++)
     {
         VT100.setCursor(3 + i, 2);
-        Serial.print("                         ");
+        serial_bus->print("                         ");
     }
     return 1;
 }
@@ -124,26 +125,26 @@ void agz_draw_border()
 {
     // Top border
     VT100.setCursor(1, 1);
-    Serial.write('+');
+    serial_bus->write('+');
     for (int col = 2; col < VT100_DISPLAY_WIDTH; col++) {
-        Serial.write('-');
+        serial_bus->write('-');
     }
-    Serial.write('+');
+    serial_bus->write('+');
 
     // Bottom border
     VT100.setCursor(VT100_DISPLAY_HEIGHT, 1);
-    Serial.write('+');
+    serial_bus->write('+');
     for (int col = 2; col < VT100_DISPLAY_WIDTH; col++) {
-        Serial.write('-');
+        serial_bus->write('-');
     }
-    Serial.write('+');
+    serial_bus->write('+');
 
     // Side borders
     for (int row = 2; row <= VT100_DISPLAY_HEIGHT - 1; row++) {
         VT100.setCursor(row, 1);
-        Serial.write('|');
+        serial_bus->write('|');
         VT100.setCursor(row, VT100_DISPLAY_WIDTH);
-        Serial.write('|');
+        serial_bus->write('|');
     }
 }
 
@@ -163,24 +164,24 @@ void agz_draw_header()
         {
             VT100.formatText(VT_RESET);
         }
-        Serial.print(i);
+        serial_bus->print(i);
     }
 
     VT100.formatText(VT_RESET);
     char buf[20] = {0};
     int32_t dtime = (micros() - argviz_time0) / 1000;
     sprintf(buf, "|%2ldms|  %2d|  %2d", dtime, selectedScreen, selectY);
-    Serial.print(buf);
+    serial_bus->print(buf);
     VT100.setCursor(3, 2);
-    Serial.print("-------------------------");
+    serial_bus->print("-------------------------");
 
     argviz_time0 = micros();
 }
 
-void agz_init()
+void agz_init(Stream &_serial_bus)
 {
-    Serial.begin(1000000);
-    VT100.begin(Serial);
+    serial_bus = &_serial_bus;
+    VT100.begin(_serial_bus);
     VT100.cursorOff();
 }
 
@@ -213,9 +214,9 @@ void agz_update()
 
     clickState = CLICK_NONE;
 
-    while(Serial.available())
+    while(serial_bus->available())
     {
-        switch (Serial.read())
+        switch (serial_bus->read())
         {
         case 'h':
             if(selectY == 0)
