@@ -1,4 +1,4 @@
-name: AutoBashed SemVer
+name: Automatic publish
 on:
   push:
     branches:
@@ -6,7 +6,7 @@ on:
       - 'master'
 
 jobs:
-  generate:
+  update_version:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -50,3 +50,24 @@ jobs:
           tag_message=$(git log -1 --pretty=%B)
           git tag -a "${tag_semver}" -m "${tag_message}"
           git push origin "${tag_semver}" >/dev/null 2>&1
+
+  publish:
+    needs: update_version
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install PlatformIO Core
+        run: pip install platformio
+
+      - name: Publish Package to PlatformIO Registry
+        run: pio pkg publish --non-interactive
+        env:
+          PLATFORMIO_AUTH_TOKEN: ${{ secrets.PLATFORMIO_AUTH_TOKEN }}
