@@ -14,7 +14,7 @@ in platformio.ini to get proper output
 
 uint8_t counter = 0;
 
-SCREEN(0,
+SCREEN(screen0,
 {
     ROW("counter [us]: %lu", micros());
     ROW("counter [ms]: %lu", millis());
@@ -41,17 +41,17 @@ SCREEN(0,
     VT100.formatText(VT_RESET);
 })
 
-SCREEN(1,
+SCREEN(screen1,
     ROW("This is screen 1");
 )
 
-SCREEN(2,
+SCREEN(screen2,
 {
     ROW("This is screen 2");
 }
 )
 
-SCREEN(3,
+SCREEN(screen3,
 {
   static int zero_idx = 0;
   CLICK_ROW([](CLICK_STATE state) {
@@ -72,22 +72,22 @@ SCREEN(3,
   }, "screens[%d:%d]", zero_idx, zero_idx + 5);
 
   for(int i = zero_idx; i < zero_idx + 5; i++)
-    ROW("screens[%d] = %p", i, screens[i]);
+    ROW("screens[%d] = %p", i, __screens[i]);
 }
 )
 
 
 void setup()
 {
-  agz_init();
-  registerScreen(0, screen0);
-  registerScreen(1, screen1);
-  registerScreen(2, screen2);
-  registerScreen(3, screen3);
+  argviz_init(Serial);
+  argviz_registerScreen(0, screen0);
+  argviz_registerScreen(1, screen1);
+  argviz_registerScreen(2, screen2);
+  argviz_registerScreen(3, screen3);
 }
 
 void loop()
 {
-  agz_update();
+  argviz_update();
   delay(20);
 }

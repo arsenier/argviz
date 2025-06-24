@@ -12,9 +12,9 @@
 #define SCREENS_AMOUNT 10
 #define SCREEN_MAX_HEIGHT (DISPLAY_HEIGHT - 2)
 
-size_t selectedScreen = 0;
-int selectY = 0;
-Stream *serial_bus;
+size_t __selectedScreen = 0;
+int __selectY = 0;
+Stream *__serial_bus;
 
 enum CLICK_STATE
 {
@@ -24,27 +24,27 @@ enum CLICK_STATE
     CLICK_RIGHT,
 };
 
-CLICK_STATE clickState = CLICK_NONE;
+CLICK_STATE __clickState = CLICK_NONE;
 
 #define ROW(...) \
     { \
         VT100.setCursor(argviz_row + 3, 2); \
         VT100.formatText(VT_RESET); \
-        if(selectY == argviz_row) { \
+        if(__selectY == argviz_row) { \
             VT100.formatText(VT_REVERSE); \
         } \
         char buf[VT100_DISPLAY_WIDTH] = {0}; \
         int len = sprintf(buf, __VA_ARGS__); \
         if(len == -1 || len > DISPLAY_WIDTH) \
         { \
-            serial_bus->print("      sprintf error      "); \
+            __serial_bus->print("      sprintf error      "); \
         } \
         else \
         { \
-            serial_bus->print(buf); \
+            __serial_bus->print(buf); \
             for(int k = len; k < DISPLAY_WIDTH; k++) \
             { \
-                serial_bus->print(' '); \
+                __serial_bus->print(' '); \
             } \
         } \
         argviz_row++; \
@@ -56,32 +56,32 @@ CLICK_STATE clickState = CLICK_NONE;
         VT100.setCursor(argviz_row + 3, 2); \
         VT100.formatText(VT_RESET); \
         VT100.formatText(VT_BRIGHT); \
-        if(selectY == argviz_row) { \
+        if(__selectY == argviz_row) { \
             VT100.formatText(VT_REVERSE); \
-            if(clickState != CLICK_NONE) \
+            if(__clickState != CLICK_NONE) \
             { \
-                handlerClick(clickState); \
+                handlerClick(__clickState); \
             } \
         } \
         char buf[VT100_DISPLAY_WIDTH] = {0}; \
         int len = sprintf(buf, __VA_ARGS__); \
         if(len == -1 || len > DISPLAY_WIDTH) \
         { \
-            serial_bus->print("      sprintf error      "); \
+            __serial_bus->print("      sprintf error      "); \
         } \
         else \
         { \
-            serial_bus->print(buf); \
+            __serial_bus->print(buf); \
             for(int k = len; k < DISPLAY_WIDTH; k++) \
             { \
-                serial_bus->print(' '); \
+                __serial_bus->print(' '); \
             } \
         } \
         argviz_row++; \
     }
 
-#define SCREEN(idx, ...) \
-size_t screen##idx() \
+#define SCREEN(name, ...) \
+size_t name() \
 { \
     int argviz_row = 1; \
     __VA_ARGS__ \
@@ -91,64 +91,69 @@ size_t screen##idx() \
     return argviz_row_buf; \
 }
 
-size_t screenBlank()
+size_t __screenBlank()
 {
     for(size_t i = 1; i <= 6; i++)
     {
         VT100.setCursor(3 + i, 2);
-        serial_bus->print("                         ");
+        __serial_bus->print("                         ");
     }
     return 1;
 }
 
 typedef size_t (*screenFunc)();
 
-screenFunc screens[SCREENS_AMOUNT] = {
-    screenBlank,
-    screenBlank,
-    screenBlank,
-    screenBlank,
-    screenBlank,
-    screenBlank,
-    screenBlank,
-    screenBlank,
-    screenBlank,
-    screenBlank,
+screenFunc __screens[SCREENS_AMOUNT] = {
+    __screenBlank,
+    __screenBlank,
+    __screenBlank,
+    __screenBlank,
+    __screenBlank,
+    __screenBlank,
+    __screenBlank,
+    __screenBlank,
+    __screenBlank,
+    __screenBlank,
 };
 
-void registerScreen(size_t screen_idx, screenFunc func)
+void argviz_registerScreen(size_t screen_idx, screenFunc func)
 {
-    screens[screen_idx] = func;
+    __screens[screen_idx] = func;
 }
 
-void agz_draw_border()
+void argviz_unregisterScreen(size_t screen_idx)
+{
+    __screens[screen_idx] = __screenBlank;
+}
+
+void __draw_border()
 {
     // Top border
     VT100.setCursor(1, 1);
-    serial_bus->write('+');
+    __serial_bus->write('+');
     for (int col = 2; col < VT100_DISPLAY_WIDTH; col++) {
-        serial_bus->write('-');
+        __serial_bus->write('-');
     }
-    serial_bus->write('+');
+    __serial_bus->write('+');
 
     // Bottom border
     VT100.setCursor(VT100_DISPLAY_HEIGHT, 1);
-    serial_bus->write('+');
+    __serial_bus->write('+');
     for (int col = 2; col < VT100_DISPLAY_WIDTH; col++) {
-        serial_bus->write('-');
+        __serial_bus->write('-');
     }
-    serial_bus->write('+');
+    __serial_bus->write('+');
 
     // Side borders
     for (int row = 2; row <= VT100_DISPLAY_HEIGHT - 1; row++) {
         VT100.setCursor(row, 1);
-        serial_bus->write('|');
+        __serial_bus->write('|');
         VT100.setCursor(row, VT100_DISPLAY_WIDTH);
-        serial_bus->write('|');
+        __serial_bus->write('|');
     }
 }
 
-void agz_draw_header()
+void __draw_header()
 {
     static uint32_t argviz_time0 = micros();
 
@@ -156,7 +161,7 @@ void agz_draw_header()
 
     for(size_t i = 0; i < SCREENS_AMOUNT; i++)
     {
-        if(i == selectedScreen)
+        if(i == __selectedScreen)
         {
             VT100.formatText(VT_REVERSE);
         }
@@ -164,35 +169,35 @@ void agz_draw_header()
         {
             VT100.formatText(VT_RESET);
         }
-        serial_bus->print(i);
+        __serial_bus->print(i);
     }
 
     VT100.formatText(VT_RESET);
     char buf[20] = {0};
     int32_t dtime = (micros() - argviz_time0) / 1000;
-    sprintf(buf, "|%2ldms|  %2d|  %2d", dtime, selectedScreen, selectY);
-    serial_bus->print(buf);
+    sprintf(buf, "|%2ldms|  %2d|  %2d", dtime, __selectedScreen, __selectY);
+    __serial_bus->print(buf);
     VT100.setCursor(3, 2);
-    serial_bus->print("-------------------------");
+    __serial_bus->print("-------------------------");
 
     argviz_time0 = micros();
 }
 
-void agz_init(Stream &_serial_bus)
+void argviz_init(Stream &_serial_bus)
 {
-    serial_bus = &_serial_bus;
+    __serial_bus = &_serial_bus;
     VT100.begin(_serial_bus);
     VT100.cursorOff();
 }
 
-void agz_update()
+void argviz_update()
 {
-    agz_draw_border();
-    agz_draw_header();
+    __draw_border();
+    __draw_header();
 
     size_t screenSize = 0;
 
-    switch(selectedScreen)
+    switch(__selectedScreen)
     {
     case 0:
     case 1:
@@ -204,48 +209,48 @@ void agz_update()
     case 7:
     case 8:
     case 9:
-        screenSize = screens[selectedScreen]();
+        screenSize = __screens[__selectedScreen]();
         break;
     default:
-        screenSize = screenBlank();
+        screenSize = __screenBlank();
         break;
     }
     VT100.formatText(VT_RESET);
 
-    clickState = CLICK_NONE;
+    __clickState = CLICK_NONE;
 
-    while(serial_bus->available())
+    while(__serial_bus->available())
     {
-        switch (serial_bus->read())
+        switch (__serial_bus->read())
         {
         case 'h':
-            if(selectY == 0)
+            if(__selectY == 0)
             {
-                selectedScreen = (selectedScreen + SCREENS_AMOUNT - 1) % SCREENS_AMOUNT;
+                __selectedScreen = (__selectedScreen + SCREENS_AMOUNT - 1) % SCREENS_AMOUNT;
             }
             else
             {
-                clickState = CLICK_LEFT;
+                __clickState = CLICK_LEFT;
             }
             break;
         case 'l':
-            if(selectY == 0)
+            if(__selectY == 0)
             {
-                selectedScreen = (selectedScreen + 1) % SCREENS_AMOUNT;
+                __selectedScreen = (__selectedScreen + 1) % SCREENS_AMOUNT;
             }
             else
             {
-                clickState = CLICK_RIGHT;
+                __clickState = CLICK_RIGHT;
             }
             break;
         case 'j':
-            selectY = (selectY + 1) % screenSize;
+            __selectY = (__selectY + 1) % screenSize;
             break;
         case 'k':
-            selectY = (selectY + screenSize - 1) % screenSize;
+            __selectY = (__selectY + screenSize - 1) % screenSize;
             break;
         case ' ':
-            clickState = CLICK_DOWN;
+            __clickState = CLICK_DOWN;
             break;
         default:
             break;
